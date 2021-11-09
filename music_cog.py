@@ -24,11 +24,10 @@ class music_cog(commands.Cog):
         return {'source': info['formats'][0]['url'], 'title': info['title']}
 
 
-    async def play_next(self, ctx):
+    def play_next(self, ctx):
         if len(self.music_queue) > 0:            
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
-            await ctx.send("Playing " + self.music_queue[-1][0]['title'])
             self.music_queue.pop(0)
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
         else:
