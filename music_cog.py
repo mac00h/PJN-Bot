@@ -13,6 +13,7 @@ class music_cog(commands.Cog):
 
         self.vc = ""
 
+
     def search_yt(self, item):
         with youtube_dl.YoutubeDL(self.YDL_OPTIONS) as ydl:
             try:
@@ -22,36 +23,42 @@ class music_cog(commands.Cog):
         
         return {'source': info['formats'][0]['url'], 'title': info['title']}
 
-    def play_next(self):
-        if len(self.music_queue) > 0:
+
+    async def play_next(self, ctx):
+        if len(self.music_queue) > 0:            
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
+            await ctx.send("Playing " + self.music_queue[-1][0]['title'])
             self.music_queue.pop(0)
-            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
+            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
         else:
             self.is_playing = False
 
-    async def play_music(self):
+
+    async def play_music(self, ctx):
         if len(self.music_queue) > 0:
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
 
             if self.vc == "" or not self.vc.is_connected():
                 self.vc = await self.music_queue[0][1].connect()
-            else:
-                self.vc = await self.bot.move_to(self.music_queue[0][1])
-            
-            print(self.music_queue)
+            # else:
+            #     self.vc = await self.bot.move_to(self.music_queue[0][1])
+
+            await ctx.send("Playing " + self.music_queue[-1][0]['title'])
             self.music_queue.pop(0)
-            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
+            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
+            
         else:
             self.is_playing = False
+
 
     @commands.command()
     async def p(self, ctx, *args):
         query = " ".join(args)
         voice_channel = ctx.author.voice.channel
 
+        #this does not work - message is not send when not connected to channel
         if voice_channel is None:
             await ctx.send("Connect to voice channel!")
         else:
@@ -59,12 +66,13 @@ class music_cog(commands.Cog):
             if type(song) == type(True):
                 await ctx.send("Eroror downloading the song ¯\_(ツ)_/¯")
             else:
-                await ctx.send("Song added to queue" + song.keys()[0])
-                # print(song.title)
                 self.music_queue.append([song, voice_channel])
-
                 if self.is_playing == False:
-                    await self.play_music()
+                    # await ctx.send("Playing " + self.music_queue[-1][0]['title'])
+                    await self.play_music(ctx)
+                else:
+                    await ctx.send(self.music_queue[-1][0]['title'] + " added to queue!")
+
 
     @commands.command()
     async def q(self, ctx):
@@ -77,6 +85,7 @@ class music_cog(commands.Cog):
             await ctx.send(retval)
         else:
             await ctx.send("Queue is empty.")
+
 
     @commands.command()
     async def s(self, ctx):

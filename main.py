@@ -6,17 +6,17 @@ from music_cog import music_cog
 import json
 from ibm_watson import AssistantV2
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
-import DefaultApiKeys
+from DefaultApiKeys import BASE_URL, API_KEY, ASSISTANT_ID
 
 def init():
-    authenticator = IAMAuthenticator(DefaultApiKeys.API_KEY)
+    authenticator = IAMAuthenticator(API_KEY)
     assistant = AssistantV2(
         version='2021-06-14',
         authenticator=authenticator
     )
 
-    assistant.set_service_url(DefaultApiKeys.BASE_URL)
-    session_id = createSession(assistant, DefaultApiKeys.ASSISTANT_ID)
+    assistant.set_service_url(BASE_URL)
+    session_id = createSession(assistant, ASSISTANT_ID)
 
     return authenticator, assistant, session_id
 
@@ -45,22 +45,18 @@ load_dotenv()
 TOKEN = os.getenv('TOKEN')
 Client = commands.Bot(command_prefix="!")
 Client.add_cog(music_cog(Client))
+authenticator, assistant, session_id = init()
 
-@Client.event
-async def on_message(message):
-    authenticator, assistant, session_id = init()
+@Client.listen('on_message')
+async def msg(message):
+    if message.content.startswith("!") == True:
+        return
     if message.author == Client.user:
         return
     if message.content != 'exit':
-        await message.channel.send(send_message(assistant, session_id, DefaultApiKeys.ASSISTANT_ID, message.content))
+        await message.channel.send(send_message(assistant, session_id, ASSISTANT_ID, message.content))
     if message.content == 'exit':
-        deleteSession(assistant, session_id, DefaultApiKeys.ASSISTANT_ID)
+        deleteSession(assistant, session_id, ASSISTANT_ID)
         await message.channel.send('Shutting down..')
-    await Client.process_commands(message)
-
-    #running commands might be possible by reading output from bot, example: "Can u play me |query|-object_of_interest?"
-    #Bot responding: "Sure no problem! Playing...!"
-    #Same with skip -> "Sure! Skipping song..."
-    #Same with delete -> "Sure deleting..."
 
 Client.run(TOKEN)
