@@ -24,30 +24,28 @@ class music_cog(commands.Cog):
         return {'source': info['formats'][0]['url'], 'title': info['title']}
 
 
-    def play_next(self, ctx):
+    def play_next(self):
         if len(self.music_queue) > 0:            
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
             self.music_queue.pop(0)
-            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
+            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
         else:
             self.is_playing = False
 
 
-    async def play_music(self, ctx):
+    async def play_music(self):
         if len(self.music_queue) > 0:
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
 
             if self.vc == "" or not self.vc.is_connected():
                 self.vc = await self.music_queue[0][1].connect()
-            # else:
-            #     self.vc = await self.bot.move_to(self.music_queue[0][1])
+            else:
+                await self.vc.move_to(self.music_queue[0][1])
 
-            await ctx.send("Playing " + self.music_queue[-1][0]['title'])
             self.music_queue.pop(0)
-            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
-            
+            self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
         else:
             self.is_playing = False
 
@@ -63,15 +61,23 @@ class music_cog(commands.Cog):
         else:
             song = self.search_yt(query)
             if type(song) == type(True):
-                await ctx.send("Eroror downloading the song ¯\_(ツ)_/¯")
+                await ctx.send("Error downloading the song ¯\_(ツ)_/¯")
             else:
                 self.music_queue.append([song, voice_channel])
                 if self.is_playing == False:
-                    # await ctx.send("Playing " + self.music_queue[-1][0]['title'])
-                    await self.play_music(ctx)
+                    await self.play_music()
                 else:
                     await ctx.send(self.music_queue[-1][0]['title'] + " added to queue!")
 
+
+    @commands.command()
+    async def rm(self, ctx, *args):
+        query = " ".join(args)
+        for i in range(0, len(self.music_queue)):
+            if query.lower() in self.music_queue[i][0]['title'].lower():
+                await ctx.send("Removing " + self.music_queue[i][0]['title'] + " from queue..")
+                del self.music_queue[i]
+        
 
     @commands.command()
     async def q(self, ctx):
@@ -88,6 +94,5 @@ class music_cog(commands.Cog):
 
     @commands.command()
     async def s(self, ctx):
-        if self.vc != "":
+        if self.vc != "" and self.vc:
             self.vc.stop()
-            await self.play_music()
