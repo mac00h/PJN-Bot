@@ -27,10 +27,8 @@ class music_cog(commands.Cog):
 
 
     def play_next(self):
-
         if self.is_looped and len(self.music_queue) == 0:
             self.music_queue = self.loop_queue
-
 
         if len(self.music_queue) > 0:            
             self.is_playing = True

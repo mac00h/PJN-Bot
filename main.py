@@ -49,7 +49,7 @@ authenticator, assistant, session_id = init()
 
 @Client.listen('on_message')
 async def msg(message):
-    if message.content.startswith("!"):
+    if message.content.startswith("!") == True:
         return
     if message.author == Client.user:
         return
